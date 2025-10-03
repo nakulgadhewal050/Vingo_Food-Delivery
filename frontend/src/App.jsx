@@ -24,10 +24,7 @@ import { useEffect } from 'react'
 import { io } from 'socket.io-client'
 import { setSocket } from './redux/userSlice'
 import OrderDelivered from './pages/OrderDelivered'
-export const serverUrl = "https://vingo-food-delivery-backend-glvc.onrender.com"
-
-axios.defaults.baseURL = "https://vingo-food-delivery-backend.onrender.com";
-axios.defaults.withCredentials = true;
+export const serverUrl = "http://localhost:3000"
 
 
 function App() {
@@ -53,18 +50,6 @@ function App() {
       socketInstance.disconnect()
      }
     },[userData?._id])
-
-    useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data } = await axios.get("/me");
-        dispatch(setUserData(data));
-      } catch (err) {
-        console.log("Not logged in:", err.response?.data?.message);
-      }
-    };
-    fetchUser();
-  }, [dispatch]);
   return (
     <>
      <Routes>
