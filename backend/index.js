@@ -10,6 +10,7 @@ import cors from 'cors';
 import shopRouter from './routes/shopRoute.js';
 import itemRouter from './routes/itemRoute.js';
 import orderRouter from './routes/orderRoute.js';
+import meRouter from './routes/meroute.js';
 const port = process.env.PORT || 4000;
 import http from "http";
 import { Server } from 'socket.io';
@@ -41,6 +42,7 @@ app.use("/api/user", userRouter);
 app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
+app.use("/", meRouter);
 
 
 socketHandler(io)
