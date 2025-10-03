@@ -24,7 +24,7 @@ import { useEffect } from 'react'
 import { io } from 'socket.io-client'
 import { setSocket } from './redux/userSlice'
 import OrderDelivered from './pages/OrderDelivered'
-export const serverUrl = "http://localhost:3000"
+export const serverUrl = "https://vingo-food-delivery-backend-glvc.onrender.com"
 
 
 function App() {
