@@ -2,7 +2,7 @@ import React from 'react'
 
 function CategoryCard({ name,image,onClick }) {
   return (
-    <div className='w-[120px] h-[120px] md:h-[180px] md:w-[180px] relative rounded-2xl border-2 border-[#ff4d2d] shrink-0 overflow-hidden bg-white shadow-xl shadow-gray-200 hover:shadow-lg transition-shadow'
+    <div className='w-[200px] h-[200px] md:h-[260px] md:w-[260px] relative rounded-2xl border-2 border-[#ff4d2d] shrink-0 overflow-hidden bg-white shadow-xl shadow-gray-200 hover:shadow-lg transition-shadow'
     onClick={onClick}>
         <img src={image} alt="" 
         className='w-full h-full object-cover transform hover:scale-110 transition-transform duration-300'/>

@@ -89,21 +89,37 @@ export const placeOrder = async (req, res) => {
 
         const io = req.app.get('io');
 
+        console.log("📦 New order placed:", newOrder._id);
+        console.log("🏪 Number of shop orders:", newOrder.shopOrders.length);
+
         if (io) {
-            newOrder.shopOrders.forEach(shopOrder => {
-                const ownerSocketId = shopOrder.owner.socketId;
+            newOrder.shopOrders.forEach((shopOrder, index) => {
+                const owner = shopOrder.owner;
+                const ownerSocketId = owner?.socketId;
+                
+                console.log(`🏪 Shop Order ${index + 1}:`);
+                console.log(`   Owner: ${owner?.name} (ID: ${owner?._id})`);
+                console.log(`   Socket ID: ${ownerSocketId || 'NOT CONNECTED'}`);
+                
                 if (ownerSocketId) {
-                    io.to(ownerSocketId).emit("newOrder", {
+                    const eventData = {
                         _id: newOrder._id,
                         paymentMethod: newOrder.paymentMethod,
                         user: newOrder.user,
                         shopOrders: shopOrder,
                         createdAt: newOrder.createdAt,
                         deliveryAddress: newOrder.deliveryAddress,
-                        paymetn: newOrder.payment,
-                    })
+                        payment: newOrder.payment,
+                    };
+                    
+                    io.to(ownerSocketId).emit("newOrder", eventData);
+                    console.log(`✅ Emitted newOrder event to ${owner.name} (${ownerSocketId})`);
+                } else {
+                    console.log(`⚠️ Owner ${owner?.name} is not connected (no socketId)`);
                 }
-            })
+            });
+        } else {
+            console.log("❌ Socket.io instance not available!");
         }
 
         return res.status(201).json(newOrder)
@@ -138,21 +154,37 @@ export const verifyPayment = async (req, res) => {
 
         const io = req.app.get('io');
 
+        console.log("💳 Payment verified for order:", order._id);
+        console.log("🏪 Number of shop orders:", order.shopOrders.length);
+
         if (io) {
-            order.shopOrders.forEach(shopOrder => {
-                const ownerSocketId = shopOrder.owner.socketId;
+            order.shopOrders.forEach((shopOrder, index) => {
+                const owner = shopOrder.owner;
+                const ownerSocketId = owner?.socketId;
+                
+                console.log(`🏪 Shop Order ${index + 1}:`);
+                console.log(`   Owner: ${owner?.name} (ID: ${owner?._id})`);
+                console.log(`   Socket ID: ${ownerSocketId || 'NOT CONNECTED'}`);
+                
                 if (ownerSocketId) {
-                    io.to(ownerSocketId).emit("newOrder", {
+                    const eventData = {
                         _id: order._id,
                         paymentMethod: order.paymentMethod,
                         user: order.user,
                         shopOrders: shopOrder,
                         createdAt: order.createdAt,
                         deliveryAddress: order.deliveryAddress,
-                        paymetn: order.payment,
-                    })
+                        payment: order.payment,
+                    };
+                    
+                    io.to(ownerSocketId).emit("newOrder", eventData);
+                    console.log(`✅ Emitted newOrder event to ${owner.name} (${ownerSocketId})`);
+                } else {
+                    console.log(`⚠️ Owner ${owner?.name} is not connected (no socketId)`);
                 }
-            })
+            });
+        } else {
+            console.log("❌ Socket.io instance not available!");
         }
         return res.status(200).json(order)
 
@@ -218,6 +250,25 @@ export const updateOrderStatus = async (req, res) => {
         if (status == "out of delivery" && !shopOrder.assignment) {
             const { longitude, latitude } = order.deliveryAddress;
             console.log("🔍 Searching for delivery boys near:", { latitude, longitude });
+            console.log("📦 Order details:", {
+                orderId: order._id,
+                shopId: shopOrder.shop,
+                shopOrderId: shopOrder._id
+            });
+            
+            // First, let's check all delivery boys in the database
+            const allDeliveryBoys = await User.find({ role: "deliveryboy" });
+            console.log(`👥 Total delivery boys in database: ${allDeliveryBoys.length}`);
+            
+            allDeliveryBoys.forEach((boy, index) => {
+                console.log(`   ${index + 1}. ${boy.fullname}:`, {
+                    hasLocation: !!boy.location?.coordinates,
+                    coordinates: boy.location?.coordinates,
+                    isOnline: boy.isOnline,
+                    hasSocketId: !!boy.socketId,
+                    socketId: boy.socketId
+                });
+            });
             
             const nearByDeliveryBoys = await User.find({
                 role: "deliveryboy",
@@ -230,9 +281,14 @@ export const updateOrderStatus = async (req, res) => {
                         $maxDistance: 5000 // 5km
                     }
                 }
-            })
+            });
 
-            console.log(`📍 Found ${nearByDeliveryBoys.length} nearby delivery boys`);
+            console.log(`📍 Found ${nearByDeliveryBoys.length} nearby delivery boys (within 5km)`);
+            
+            if (nearByDeliveryBoys.length === 0 && allDeliveryBoys.length > 0) {
+                console.log("⚠️ No delivery boys found nearby. Checking if location index exists...");
+                console.log("💡 TIP: Make sure delivery boys have updated their location via socket");
+            }
 
             const nearByIds = nearByDeliveryBoys.map(b => b._id);
             const busyIds = await DeliveryAssignment.find({
@@ -335,12 +391,16 @@ export const updateOrderStatus = async (req, res) => {
 export const getDeliveryBoyAssignment = async (req, res) => {
     try {
         const deliveryBoyId = req.userId;
+        console.log(`📋 Fetching assignments for delivery boy: ${deliveryBoyId}`);
+        
         const assignments = await DeliveryAssignment.find({
             brodcastedTo: deliveryBoyId,
             status: "brodcasted",
         })
             .populate("order")
-            .populate("shop")
+            .populate("shop");
+
+        console.log(`📦 Found ${assignments.length} broadcasted assignments`);
 
         const formated = assignments.map(a => ({
             assignmentId: a._id,
@@ -349,11 +409,12 @@ export const getDeliveryBoyAssignment = async (req, res) => {
             deliveryAddress: a.order.deliveryAddress,
             items: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId)).shopOrderItems || [],
             subtotal: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId)).subtotal,
-
-        }))
-        return res.status(200).json(formated)
+        }));
+        
+        return res.status(200).json(formated);
     } catch (error) {
-        return res.status(500).json({ message: `error in get Assignments: ${error}` })
+        console.log(`❌ Error in getDeliveryBoyAssignment: ${error.message}`);
+        return res.status(500).json({ message: `error in get Assignments: ${error}` });
     }
 }
 
@@ -402,6 +463,8 @@ export const acceptOrder = async (req, res) => {
 
 export const getCurrentOrder = async (req, res) => {
     try {
+        console.log(`🚚 Fetching current order for delivery boy: ${req.userId}`);
+        
         const assignment = await DeliveryAssignment.findOne({
             assignedTo: req.userId,
             status: "assigned"
@@ -411,20 +474,22 @@ export const getCurrentOrder = async (req, res) => {
             .populate({
                 path: "order",
                 populate: [{ path: "user", select: "fullname mobile email location", }]
-
-            })
+            });
 
         if (!assignment) {
-            return res.status(404).json({ message: "assignment not found" })
+            console.log(`ℹ️ No current assignment found for delivery boy: ${req.userId}`);
+            return res.status(404).json({ message: "assignment not found" });
         }
         if (!assignment.order) {
-            return res.status(404).json({ message: "order not found" })
+            console.log(`⚠️ Assignment found but order missing: ${assignment._id}`);
+            return res.status(404).json({ message: "order not found" });
         }
 
-        const shopOrder = assignment.order.shopOrders.find(so => String(so._id) == String(assignment.shopOrderId))
+        const shopOrder = assignment.order.shopOrders.find(so => String(so._id) == String(assignment.shopOrderId));
 
         if (!shopOrder) {
-            return res.status(404).json({ message: "shop order not found" })
+            console.log(`⚠️ Shop order not found in order for shopOrderId: ${assignment.shopOrderId}`);
+            return res.status(404).json({ message: "shop order not found" });
         }
 
         let deliveryBoyLocation = { lat: null, lon: null };
@@ -439,6 +504,8 @@ export const getCurrentOrder = async (req, res) => {
             customerLocation.lon = assignment.order.deliveryAddress.longitude;
         }
 
+        console.log(`✅ Current order found and returned for delivery boy`);
+        
         return res.status(200).json({
             _id: assignment.order._id,
             user: assignment.order.user,
@@ -446,7 +513,7 @@ export const getCurrentOrder = async (req, res) => {
             deliveryAddress: assignment.order.deliveryAddress,
             deliveryBoyLocation,
             customerLocation,
-        })
+        });
 
     } catch (error) {
         return res.status(500).json({ message: `error in get current order: ${error}` })

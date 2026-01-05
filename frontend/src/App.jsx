@@ -40,22 +40,45 @@ function App() {
     useUpdateLocation()
 
     useEffect(()=>{
-     const socketInstance = io(serverUrl,{withCredentials:true})
-     dispatch(setSocket(socketInstance))
-     socketInstance.on("connect",()=>{
-      console.log("🔌 Socket connected, ID:", socketInstance.id);
-      if(userData){
-        console.log("👤 Sending identity for user:", userData.fullname, "Role:", userData.role);
-        socketInstance.emit('identity',{userId:userData._id})
-      }
-     })
-     socketInstance.on("disconnect", () => {
-      console.log("🔌 Socket disconnected");
-     })
-     return ()=>{
-      socketInstance.disconnect()
-     }
-    },[userData?._id])
+     if(!userData) return;
+
+     console.log("🔌 Initializing socket for user:", userData.fullname);
+     
+     const socketInstance = io(serverUrl, {
+       withCredentials: true,
+       transports: ['websocket', 'polling'],
+       reconnection: true,
+       reconnectionAttempts: 5,
+       reconnectionDelay: 1000,
+     });
+     
+     dispatch(setSocket(socketInstance));
+     
+     socketInstance.on("connect", () => {
+       console.log("✅ Socket connected, ID:", socketInstance.id);
+       console.log("👤 Sending identity for user:", userData.fullname, "Role:", userData.role);
+       socketInstance.emit('identity', { userId: userData._id });
+     });
+     
+     socketInstance.on("disconnect", (reason) => {
+       console.log("🔌 Socket disconnected. Reason:", reason);
+     });
+     
+     socketInstance.on("reconnect", (attemptNumber) => {
+       console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
+       socketInstance.emit('identity', { userId: userData._id });
+     });
+     
+     socketInstance.on("connect_error", (error) => {
+       console.log("❌ Socket connection error:", error.message);
+     });
+     
+     return () => {
+       console.log("🛑 Cleaning up socket connection");
+       socketInstance.disconnect();
+       dispatch(setSocket(null));
+     };
+    }, [userData?._id, dispatch])
   return (
     <>
      <Routes>

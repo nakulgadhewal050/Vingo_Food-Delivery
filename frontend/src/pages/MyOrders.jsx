@@ -14,24 +14,56 @@ function MyOrders() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  useEffect(()=>{
-   socket?.on("newOrder",(data)=>{
-       if(data.shopOrders?.owner._id == userData._id){
-        dispatch(setMyOrders([data,...myOrders]))
-       }
-   })
+  useEffect(() => {
+    if (!socket || !userData?._id) return;
 
-   socket?.on("updateStatus",({orderId,shopId,status,userId})=>{
-        if(userId == userData._id){
-          dispatch(updateRealtimeOrderStatus({orderId,shopId,status}))
+    const handleNewOrder = (data) => {
+      console.log("🔔 New order received:", data);
+      console.log("👤 My user ID:", userData._id);
+      console.log("🏪 Order owner ID:", data.shopOrders?.owner?._id || data.shopOrders?.owner);
+      
+      // Check if this order is for this owner
+      const orderOwnerId = typeof data.shopOrders?.owner === 'object' 
+        ? data.shopOrders.owner._id 
+        : data.shopOrders?.owner;
+      
+      if (orderOwnerId == userData._id) {
+        console.log("✅ Order is for my shop, adding to list");
+        // Use functional update to avoid stale closure
+        dispatch(setMyOrders((prevOrders) => [data, ...(prevOrders || [])]));
+        
+        // Show notification
+        if (typeof Audio !== 'undefined') {
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(e => console.log('Audio play failed:', e));
         }
-   })
+      } else {
+        console.log("⚠️ Order is not for my shop, ignoring");
+      }
+    };
 
-   return ()=>{
-    socket?.off("newOrder")
-    socket?.off("updateStatus")
-   }
-  },[socket])
+    const handleUpdateStatus = ({ orderId, shopId, status, userId }) => {
+      console.log("🔄 Order status update:", { orderId, shopId, status, userId });
+      console.log("👤 My user ID:", userData._id);
+      
+      if (userId == userData._id) {
+        console.log("✅ Status update is for me");
+        dispatch(updateRealtimeOrderStatus({ orderId, shopId, status }));
+      } else {
+        console.log("⚠️ Status update is not for me");
+      }
+    };
+
+    console.log("🎧 Setting up socket listeners for user:", userData._id);
+    socket.on("newOrder", handleNewOrder);
+    socket.on("updateStatus", handleUpdateStatus);
+
+    return () => {
+      console.log("🧹 Cleaning up socket listeners");
+      socket.off("newOrder", handleNewOrder);
+      socket.off("updateStatus", handleUpdateStatus);
+    };
+  }, [socket, userData?._id, dispatch])
 
   return (
     <div className='w-full min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex justify-center px-4 py-6'>

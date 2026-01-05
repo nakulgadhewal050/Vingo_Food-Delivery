@@ -110,13 +110,13 @@ function Nav() {
                 </button>
               </>}
 
-            <div className='text-[#ff4d2d] cursor-pointer hidden md:flex items-center gap-2 relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 font-medium'>
+            <div className='text-[#ff4d2d] cursor-pointer hidden md:flex items-center gap-2 relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 font-medium' onClick={() => navigate("/myorders")}>
               <TbReceiptRupee size={20} />
-              <span onClick={() => navigate("/myorders")}>My Orders</span>
+              <span>My Orders</span>
               <span className='absolute -right-2 -top-2 text-xs font-bold text-white bg-[#ff4d2d] rounded-full px-[6px] py-[1px]'>0</span>
             </div>
-            <div className='text-[#ff4d2d] cursor-pointer md:hidden flex items-center gap-2 relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 font-medium'>
-              <TbReceiptRupee size={20} onClick={() => navigate("/myorders")} />
+            <div className='text-[#ff4d2d] cursor-pointer md:hidden flex items-center gap-2 relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 font-medium' onClick={() => navigate("/myorders")}>
+              <TbReceiptRupee size={20} />
               <span className='absolute -right-2 -top-2 text-xs font-bold text-white bg-[#ff4d2d] rounded-full px-[6px] py-[1px]'>0</span>
             </div>
           </> : (

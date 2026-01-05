@@ -22,7 +22,7 @@ function DeliveryBoy() {
   const navigate = useNavigate();
   const [todayDelivery, setTodayDelivery] = useState([])
   const [loading, setLoading] = useState(false);
-  const [message,setMessage] = useState("")
+  const [message, setMessage] = useState("");
 
 
   useEffect(() => {
@@ -33,59 +33,86 @@ function DeliveryBoy() {
     let watchId;
 
     if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition((position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        console.log("📡 Location updated:", { latitude, longitude });
-        setDeliveryBoyLocation({ lat: latitude, lon: longitude })
-        socket.emit('updateLocation', {
-          latitude,
-          longitude,
-          userId: userData._id
-        })
-      }),
-        (error) => {
-          console.log("❌ Error in getting location:", error);
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          console.log("📡 Location updated:", { latitude, longitude });
+          setDeliveryBoyLocation({ lat: latitude, lon: longitude });
+          socket.emit('updateLocation', {
+            latitude,
+            longitude,
+            userId: userData._id
+          });
         },
-      {
-        enableHighAccuracy: true,
-      }
+        (error) => {
+          console.log("❌ Error in getting location:", error.message);
+          console.log("Error code:", error.code);
+          // Try to get location once if watch fails
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const latitude = position.coords.latitude;
+              const longitude = position.coords.longitude;
+              console.log("✅ Got current location (fallback):", { latitude, longitude });
+              setDeliveryBoyLocation({ lat: latitude, lon: longitude });
+              socket.emit('updateLocation', {
+                latitude,
+                longitude,
+                userId: userData._id
+              });
+            },
+            (err) => console.log("❌ Fallback location also failed:", err.message)
+          );
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000
+        }
+      );
     } else {
       console.log("❌ Geolocation not supported by this browser");
     }
+    
     return () => {
       if (watchId) {
         console.log("🛑 Stopping location tracking");
         navigator.geolocation.clearWatch(watchId);
       }
-    }
+    };
 
-  }, [socket, userData])
+  }, [socket, userData]);
 
 
 
   const getAssignments = async () => {
     try {
+      console.log("📥 Fetching available assignments...");
       const result = await axios.get(`${serverUrl}/api/order/getassignment`, {
         withCredentials: true
-      })
-      setAvailableAssignments(result.data)
+      });
+      console.log("✅ Assignments fetched:", result.data.length, "available");
+      setAvailableAssignments(result.data);
     } catch (error) {
-      console.log("error in fetching assignments", error);
+      console.log("⚠️ Error fetching assignments:", error.response?.data?.message || error.message);
+      setAvailableAssignments([]);
     }
   }
 
   const getCurrentOrder = async () => {
     try {
+      console.log("📥 Fetching current order...");
       const result = await axios.get(`${serverUrl}/api/order/getcurrentorder`, {
         withCredentials: true
-      })
-      setCurrentOrder(result.data)
-
+      });
+      console.log("✅ Current order found:", result.data);
+      setCurrentOrder(result.data);
     } catch (error) {
       // No current order is not an error - just means delivery person has no active delivery
-      if (error.response?.status !== 404) {
-        console.log("error in fetching get current order", error);
+      if (error.response?.status === 404) {
+        console.log("ℹ️ No current order assigned");
+      } else {
+        console.log("⚠️ Error fetching current order:", error.response?.data?.message || error.message);
       }
       setCurrentOrder(null);
     }
@@ -93,14 +120,19 @@ function DeliveryBoy() {
 
   const acceptOrder = async (assignmentId) => {
     try {
+      console.log("✅ Accepting order:", assignmentId);
       const result = await axios.get(`${serverUrl}/api/order/acceptorder/${assignmentId}`, {
         withCredentials: true
-      })
-
+      });
+      console.log("✅ Order accepted successfully:", result.data.message);
+      
+      // Refresh assignments and current order
       await getAssignments();
-      await getCurrentOrder()
+      await getCurrentOrder();
     } catch (error) {
-      console.log("error in fetching orders", error);
+      const errorMsg = error.response?.data?.message || error.message;
+      console.log("❌ Error accepting order:", errorMsg);
+      alert(errorMsg);
     }
   }
 
@@ -153,26 +185,36 @@ function DeliveryBoy() {
   }
 
   useEffect(() => {
-    socket?.on("newAssignment", (data) => {
+    if (!socket || !userData?._id) return;
+
+    const handleNewAssignment = (data) => {
       console.log("🔔 New assignment received:", data);
       if (data.sentTo == userData._id) {
         console.log("✅ Assignment is for me, adding to list");
-        setAvailableAssignments(prev => prev ? [...prev, data] : [data])
+        setAvailableAssignments(prev => prev ? [...prev, data] : [data]);
       } else {
         console.log("⚠️ Assignment not for me, ignoring");
       }
-    })
+    };
+
+    socket.on("newAssignment", handleNewAssignment);
+    
     return () => {
-      socket?.off("newAssignment")
-    }
-  }, [socket, userData])
+      socket.off("newAssignment", handleNewAssignment);
+    };
+  }, [socket, userData?._id])
 
   useEffect(() => {
-    console.log("🚀 DeliveryBoy component mounted, fetching initial data...");
-    getAssignments()
-    getCurrentOrder()
-    handleTodayDelivery()
-  }, [userData])
+    if (!userData?._id || userData.role !== "deliveryboy") {
+      console.log("⚠️ User not authenticated or not a delivery boy");
+      return;
+    }
+    
+    console.log("🚀 DeliveryBoy component mounted, fetching initial data for:", userData.fullname);
+    getAssignments();
+    getCurrentOrder();
+    handleTodayDelivery();
+  }, [userData?._id])
 
   return (
     <div className='w-screen min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex flex-col items-center overflow-y-auto pb-10'>
@@ -226,10 +268,25 @@ function DeliveryBoy() {
             <div className='bg-gradient-to-br from-[#ff4d2d] to-[#ff6b4d] p-3 rounded-xl shadow-lg'>
               <FaBox className='text-white text-2xl' />
             </div>
-            <h1 className='text-xl font-bold text-gray-900'>Available Orders</h1>
+            <div className='flex-1'>
+              <h1 className='text-xl font-bold text-gray-900'>Available Orders</h1>
+              <p className='text-sm text-gray-600'>
+                {availableAssignments === null ? 'Loading...' : `${availableAssignments?.length || 0} available`}
+              </p>
+            </div>
+            {deliveryBoyLocation && (
+              <div className='text-xs text-green-600 bg-green-50 px-3 py-1 rounded-full'>
+                📍 Location: {deliveryBoyLocation.lat.toFixed(4)}, {deliveryBoyLocation.lon.toFixed(4)}
+              </div>
+            )}
           </div>
           <div className='space-y-4'>
-            {availableAssignments?.length > 0 ? (
+            {availableAssignments === null ? (
+              <div className='text-center py-8'>
+                <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff4d2d] mx-auto'></div>
+                <p className='text-gray-600 mt-4'>Loading assignments...</p>
+              </div>
+            ) : availableAssignments?.length > 0 ? (
               availableAssignments.map((a, index) => (
                 <div key={index} className='border-2 border-orange-200 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-orange-50 to-pink-50 hover:shadow-xl transition-all hover:scale-[1.02]'>
                   <div className='flex-1'>
@@ -257,7 +314,19 @@ function DeliveryBoy() {
               <div className='text-center py-12'>
                 <BsInboxFill className='text-gray-300 text-6xl mx-auto mb-4' />
                 <p className='text-gray-500 text-lg font-medium'>No available orders at the moment</p>
-                <p className='text-gray-400 text-sm mt-2'>Check back soon for new delivery opportunities</p>
+                <p className='text-gray-400 text-sm mt-2'>
+                  {!deliveryBoyLocation 
+                    ? '⚠️ Location not detected. Please enable location services.' 
+                    : 'Check back soon for new delivery opportunities'}
+                </p>
+                <button 
+                  onClick={() => {
+                    console.log("🔄 Manually refreshing assignments...");
+                    getAssignments();
+                  }}
+                  className='mt-4 bg-[#ff4d2d] text-white px-6 py-2 rounded-full hover:bg-[#ff3d1d] transition-all'>
+                  Refresh
+                </button>
               </div>
             )}
           </div>

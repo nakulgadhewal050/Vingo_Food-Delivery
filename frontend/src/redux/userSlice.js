@@ -68,7 +68,12 @@ const userSlice = createSlice({
         },
 
         setMyOrders: (state, action) => {
-            state.myOrders = action.payload;
+            // Handle both direct payload and functional updates
+            if (typeof action.payload === 'function') {
+                state.myOrders = action.payload(state.myOrders);
+            } else {
+                state.myOrders = action.payload;
+            }
         },
 
         addMyOrder: (state, action) => {
