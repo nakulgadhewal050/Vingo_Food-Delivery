@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { IoArrowBackSharp } from "react-icons/io5";
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaUtensils } from "react-icons/fa";
 import axios from 'axios';
@@ -15,7 +15,6 @@ function EditItem() {
     const [currentItem,setCurrentItem]=useState(null);
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
-    const { myShopData } = useSelector(state => state.owner)
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
     const [frontendImage, setFrontendImage] = useState("");
@@ -57,7 +56,7 @@ function EditItem() {
             dispatch(setMyShopData(result.data))
             setLoading(false);
             navigate("/");
-            console.log("item created/edited successfully", result.data);
+        
         } catch (error) {
             setLoading(false);
             console.log("error in editing item", error);
@@ -65,7 +64,7 @@ function EditItem() {
     }
 
     useEffect(() => {
-        const handleGetItemById = async (req,res) => {
+        const handleGetItemById = async () => {
             try {
                const result = await axios.get(`${serverUrl}/api/item/getbyid/${itemId}`,
                 { withCredentials: true })

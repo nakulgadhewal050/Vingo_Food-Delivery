@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { IoArrowBackSharp } from "react-icons/io5";
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaUtensils } from "react-icons/fa";
 import axios from 'axios';
@@ -13,7 +13,6 @@ import { ClockLoader } from "react-spinners"
 function AddItem() {
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
-    const { myShopData } = useSelector(state => state.owner)
     const [price, setPrice] = useState(0);
     const [name, setName] = useState("");
     const [category, setCategory] = useState("");

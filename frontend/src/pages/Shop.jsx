@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import axios from 'axios'
 import React from 'react'
 import { serverUrl } from '../App'
@@ -21,7 +22,6 @@ function Shop() {
                 { withCredentials: true })
             setShop(result.data.shop)
             setItems(result.data.items)
-            console.log("handle shop: ", result.data);
         } catch (error) {
             console.log("handle shop error: ", error);
         }

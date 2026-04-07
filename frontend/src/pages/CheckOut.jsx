@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import React, { useEffect, useState } from 'react'
 import { IoArrowBackSharp } from "react-icons/io5";
 import { FaLocationDot } from "react-icons/fa6";
@@ -70,7 +71,7 @@ function CheckOut() {
     setLoading(false);
   }
 
-  const getLatLngByAddress = async (address) => {
+  const getLatLngByAddress = async () => {
     setLoading(true);
     try {
       const result = await axios.get(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(addressInput)}&apiKey=${apikey}`);

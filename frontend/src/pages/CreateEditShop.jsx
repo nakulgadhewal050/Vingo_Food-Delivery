@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { IoArrowBackSharp } from "react-icons/io5";
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -43,7 +43,6 @@ function CreateEditShop() {
       dispatch(setMyShopData(result.data))
       setLoading(false);
       navigate("/");
-      console.log("shop created/edited successfully", result.data);
     } catch (error) {
       setLoading(false);
       console.log("error in creating/editing shop", error);

@@ -32,6 +32,8 @@ function UserOrderCard({ data }) {
       { withCredentials: true }
     );
 
+    dispatch({ type: "update_item_rating", payload: result.data });
+
     setSelectedRating(prev => ({
       ...prev,
       [itemId]: rating

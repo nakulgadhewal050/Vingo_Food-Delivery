@@ -18,7 +18,7 @@ function OwnerOrderCard({ data }) {
         { withCredentials: true })
       dispatch(updateOrderStatus({ orderId, shopId, status }))
       setAvailableBoys(result.data.availableBoys)
-      console.log("order status updated", result.data);
+
 
     } catch (error) {
       console.log("error updating status", error);

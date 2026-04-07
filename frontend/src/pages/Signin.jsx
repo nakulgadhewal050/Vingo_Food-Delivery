@@ -18,7 +18,6 @@ import {setUserData } from '../redux/userSlice.js';
 
 function Signin() {
   const primaryColor = '#ff4d2d';
-  const hoverColor = '#e64323';
   const bgColor = '#fff9f6';
   const borderColor = '#ddd';
 
@@ -38,7 +37,7 @@ function Signin() {
         email,password
       },{withCredentials:true});
        dispatch(setUserData(result.data))
-      console.log("signin successful");
+    
       setError("")
       setLoading(false);
     
@@ -56,12 +55,12 @@ function Signin() {
       const { data } = await axios.post(
         `${serverUrl}/api/auth/googleauth`,
         {
-          email: result.user.email,
+          fullname: result.user.displayName, email: result.user.email, mobile: result.user.phoneNumber, role: "user"
         },
         { withCredentials: true }
       );
        dispatch(setUserData(data))
-      console.log("google signin successful", data);
+    
       setError("")
       setLoading(false);
     } catch (error) {

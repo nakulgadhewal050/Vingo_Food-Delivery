@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -42,7 +43,7 @@ function TrackOrderPage() {
         withCredentials: true
       });
       setCurrentOrder(result.data);
-      console.log("order details", result.data);
+    
     } catch (error) {
       console.log("error in fetching order by id", error);
     }

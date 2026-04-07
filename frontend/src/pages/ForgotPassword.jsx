@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React from 'react'
 import { IoMdArrowBack } from "react-icons/io";
 import { useState } from 'react'
@@ -25,7 +26,6 @@ function ForgotPassword() {
             const result = await axios.post(`${serverUrl}/api/auth/sendotp`,{email},
                 {withCredentials: true}
             )
-            console.log("otp sent successfully",result);
             setStep(2);
             setError("")
             setLoading(false);
@@ -44,7 +44,6 @@ function ForgotPassword() {
             const result = await axios.post(`${serverUrl}/api/auth/verifyotp`,{email,otp},
                 {withCredentials: true}
             )
-            console.log("otp sent successfully",result);
             setStep(3);
             setError("")
             setLoading(false);
@@ -66,7 +65,7 @@ function ForgotPassword() {
             const result = await axios.post(`${serverUrl}/api/auth/resetpassword`,{email,newPassword},
                 {withCredentials: true}
             )
-            console.log("otp sent successfully",result);
+           
             navigate("/signin");
             setError("")
             setLoading(false);

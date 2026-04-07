@@ -18,17 +18,11 @@ function MyOrders() {
     if (!socket || !userData?._id) return;
 
     const handleNewOrder = (data) => {
-      console.log("🔔 New order received:", data);
-      console.log("👤 My user ID:", userData._id);
-      console.log("🏪 Order owner ID:", data.shopOrders?.owner?._id || data.shopOrders?.owner);
-      
-      // Check if this order is for this owner
       const orderOwnerId = typeof data.shopOrders?.owner === 'object' 
         ? data.shopOrders.owner._id 
         : data.shopOrders?.owner;
       
-      if (orderOwnerId == userData._id) {
-        console.log("✅ Order is for my shop, adding to list");
+      if (orderOwnerId == userData._id) {  
         // Use functional update to avoid stale closure
         dispatch(setMyOrders((prevOrders) => [data, ...(prevOrders || [])]));
         
@@ -43,8 +37,6 @@ function MyOrders() {
     };
 
     const handleUpdateStatus = ({ orderId, shopId, status, userId }) => {
-      console.log("🔄 Order status update:", { orderId, shopId, status, userId });
-      console.log("👤 My user ID:", userData._id);
       
       if (userId == userData._id) {
         console.log("✅ Status update is for me");
@@ -54,7 +46,7 @@ function MyOrders() {
       }
     };
 
-    console.log("🎧 Setting up socket listeners for user:", userData._id);
+
     socket.on("newOrder", handleNewOrder);
     socket.on("updateStatus", handleUpdateStatus);
 
