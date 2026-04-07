@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import  {Navigate, Route, Routes} from 'react-router-dom'
 import Signup from './pages/Signup'
 import Signin from './pages/Signin'
@@ -25,7 +26,7 @@ import { useEffect } from 'react'
 import { io } from 'socket.io-client'
 import { setSocket } from './redux/userSlice'
 import OrderDelivered from './pages/OrderDelivered'
-export const serverUrl = "http://localhost:3000"
+export const serverUrl = import.meta.env.VITE_BASE_URL || "http://localhost:3000";  
 
 
 function App() {
